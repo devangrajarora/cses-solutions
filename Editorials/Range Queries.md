@@ -61,3 +61,25 @@ pair<int,int> query(int req,  int pos,  int l,  int r)  {
 }
 ```
 Build: O(N), Query: O(logN), Update: O(logN)
+
+### List Removals
+
+\#1 Maintain an array *available[n]* and intialise it with 1. For each query traverse from left and find the kth one and mark it as 0. This is the answer for current query.\
+Time Complexity: O(Q\*N) ie O(N\*N) as Q = N
+
+\#2 Find the kth one for each query by maintaining a range sum segment tree.\
+At each segment [L,R] if it denotes a single element and k == 1, return the index L.
+If sum of left segment id >= k, it contains the kth element, and we query for kth element in left segment.\
+Otherwise the right segment contains the kth element, and we query for (k - seg[2\*pos+1]) element in right segment.
+
+```
+int query(int pos, int l, int r, int k) {
+        
+	if(l == r and k == 1) {
+		return l;
+	}
+
+	ll mid = (l + r)/2;
+	return (k <= seg[2*pos+1]) ? query(2*pos+1,l,mid,k) : query(2*pos+2,mid+1,r,k - seg[2*pos+1]);  
+}
+```
