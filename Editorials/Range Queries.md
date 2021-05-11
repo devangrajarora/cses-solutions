@@ -1,3 +1,5 @@
+
+
 # Range Queries
 
 ### Static Range Sum Queries
@@ -11,21 +13,22 @@ Build: O(N), Query: O(logN)
 ### Static Range Minimum Queries
 
 \#1 Using Range Minimum Segment tree. \
-Build: O(N), Query: O(logN), Update: O(logN)
+Time complexity: O(Q\*logN)
 
 ### Dynamic Range Sum Queries
 
 \#1 Using Range Sum Segment tree \
-Build: O(N), Query: O(logN), Update: O(logN)
+Time complexity: O(Q\*logN)
 
 ### Dynamic Range Minimum Queries
 
 \#1 Using Range Minimum Segment tree \
-Build: O(N), Query: O(logN), Update: O(logN)
+Time complexity: O(Q\*logN)
 
 ### Range Xor Queries
+
 Create segment tree where each node represents XOR of all elements of the segment which the node represents. \
-Build: O(N), Query: O(logN), Update: O(logN)
+Time complexity: O(Q\*logN)
 
 ### Forest Queries
 
@@ -60,7 +63,7 @@ pair<int,int> query(int req,  int pos,  int l,  int r)  {
 	}
 }
 ```
-Build: O(N), Query: O(logN), Update: O(logN)
+Time complexity: O(M\*logN)
 
 ### List Removals
 
@@ -83,3 +86,21 @@ int query(int pos, int l, int r, int k) {
 	return (k <= seg[2*pos+1]) ? query(2*pos+1,l,mid,k) : query(2*pos+2,mid+1,r,k - seg[2*pos+1]);  
 }
 ```
+Time complexity: O(N\*logN)
+
+### Salary Queries
+
+n = 10<sup>9</sup> is too big to create a segment tree. If constraints would have been smaller we could've used Range sum segment tree to calculate number of employees in salary range [a,b].\
+To make this possible, we consider buckets of size 1000, such that bucket 0 represents salary range 1 to 1000, bucket 1 represents range 1001 to 2000 and so on.\
+More generally, bucket i represents range (i\*1000)+1 to (i+1)\*1000.\
+We can have 10<sup>6</sup> such buckets to represent range upto 10<sup>9</sup> salary values. We make the segment tree on these buckets.\
+For a query [a,b], on the ends of the query we can have a...i and j...b lie partially in a bucket and i+1...j-1 can be completely divided into some buckets. \
+Example, if a = 990 and b = 2010, 990...1000 and 2001...2010 partially lie in some buckets, and 1001...2000 are completely covered by buckets. \
+For the partial overlap we can add to the ans by manually checking the values in that partial overlap (The number of elements we have to check would be atmost 999 on each side).
+
+Refer to the code for more clarity.
+
+Time complexity: \
+Build: O(10<sup>7</sup>) \
+Query: O(log 10<sup>7</sup> + QlogN) \
+Update: O(log 10<sup>7</sup>)

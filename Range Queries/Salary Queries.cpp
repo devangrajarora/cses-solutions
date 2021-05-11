@@ -1,4 +1,7 @@
 #include<bits/stdc++.h>
+#pragma GCC target ("avx2")
+#pragma GCC optimization ("O3")
+#pragma GCC optimization ("unroll-loops")
 using namespace std;
 #define ll long long
 #define ld long double
@@ -12,7 +15,7 @@ using namespace std;
 #define rfor(i,n,a) for(ll i = n ; i >= a ; i--)
 #define pb push_back
 #define endl "\n"
-#define vi vector<ll>
+#define vi vector<int>
 #define vvi vector<vi>
 #define pii pair <ll,ll>
 #define fastio ios_base::sync_with_stdio(false);cin.tie(NULL)
@@ -47,74 +50,65 @@ using namespace std;
 
 // read once, read again, think, code
 
+const int MAXM = 1e6;
+
 struct SegmentTree {
 	
-    vi mx,mn;
+    vi seg;
     ll sz, n;
 
-    void init(ll n) {
-        sz = 4*n;
-        this -> n = n;
-        mx.assign(sz,0ll);
-        mn.assign(sz,0ll);
-    }
-
     void build(vi &a, int pos, int l, int r) {
+
 		if(l == r) {
-			mx[pos] = a[l];
-			mn[pos] = a[l];
+			seg[pos] = a[l];
 			return;
 		}
 
 		int mid = (l + r) / 2;
 		build(a,2*pos+1,l,mid);
 		build(a,2*pos+2,mid+1,r);
-		mx[pos] = max(mx[2*pos+1], mx[2*pos+2]);
-		mn[pos] = min(mn[2*pos+1], mn[2*pos+2]);
+		seg[pos] = seg[2*pos+1] + seg[2*pos+2];
 	}
 
 	void build(vi &a) {
-		build(a,0,0,n-1);
+		this -> n = MAXM+1;
+        sz = 1;
+        while(sz < n) sz <<= 1;
+        sz = 2*sz-1;
+        seg = vi(sz,0);
+		build(a,0,0,MAXM);
 	}
 
-    void update(vi &a, ll idx, ll num, ll pos, ll l, ll r) {
+    void update(ll idx, ll num, ll pos, ll l, ll r) {
         if(l == r) {
-            mx[pos] = num;
-            mn[pos] = num;
-            a[l] = num;
+            seg[pos] = num;
             return;
         }
 
         ll mid = (l + r)/2;
-        if(idx <= mid) update(a,idx,num,2*pos+1,l,mid);
-        else update(a,idx,num,2*pos+2,mid+1,r);
-		mx[pos] = max(mx[2*pos+1], mx[2*pos+2]);
-		mn[pos] = min(mn[2*pos+1], mn[2*pos+2]);
+        if(idx <= mid) update(idx,num,2*pos+1,l,mid);
+        else update(idx,num,2*pos+2,mid+1,r);
+        seg[pos] = seg[2*pos+1] + seg[2*pos+2];
     }
 
-    void update(vi &a, ll idx, ll num) {
-        update(a,idx,num,0,0,n-1);
+    void update(ll idx, ll num) {
+        update(idx,num,0,0,MAXM);
     }
 
-    ll query(vi &a, ll pos, ll l, ll r, ll ai, ll bi) {
+    ll query(ll pos, ll l, ll r, ll ql, ll qr) {
 
-    	if(ai <= mn[pos] and mx[pos] <= bi) {
-    		return r-l+1;
-    	}
-
-        if(mn[pos] > bi or ai > mx[pos]) {
-        	return 0;
-        }
+        if(ql > r or qr < l or ql > qr) return 0;
+        if(ql <= l and r <= qr) return seg[pos];
 
         ll mid = (l + r)/2;
-        ll left = (mn[2*pos+1] > bi or ai > mx[2*pos+1]) ? 0 : query(a,2*pos+1,l,mid,ai,bi);
-        ll right = (mn[2*pos+2] > bi or ai > mx[2*pos+2]) ? 0 : query(a,2*pos+2,mid+1,r,ai,bi);
+        ll left = query(2*pos+1,l,mid,ql,qr);
+        ll right = query(2*pos+2,mid+1,r,ql,qr);
         return left + right;
 
     }
 
-    ll query(vi &a, ll ai, ll bi) {
-        return query(a,0,0,n-1,ai,bi);
+    ll query(ll ql, ll qr) {
+        return query(0,0,MAXM,ql,qr);
     }
 
 };
@@ -126,26 +120,76 @@ struct SegmentTree {
 	seg.query(ql,qr);
 */
 
+// each bucket represents values from (i*1000)+1 ... (i+1)*1000
+
+int bucket_no(int a) {
+	return ((a-1)/1000);
+}
+
+int partial_overlap(int lo, int hi, map<int,int>& m)
+{
+    int ans = 0;
+    auto it = m.lower_bound(lo);
+    while(it != m.end() && it->first <= hi){
+        ans += it->second;
+        it++;
+    }
+    return ans;
+}
+
 void solve() {
 
     ll n, q; cin >> n >> q;
-    vi a(n);
-    rep(i,n) cin >> a[i];
+    vi bucket(MAXM+1,0), salary(n);
+
+    map<int, int> m;
+
+    rep(i,n) {
+    	cin >> salary[i];
+    	m[salary[i]]++;
+    	int bucketno = bucket_no(salary[i]);
+    	bucket[bucketno]++;
+    }
 
     SegmentTree seg;
-    seg.init(n);
-    seg.build(a);
+    seg.build(bucket);
 
     while(q--) {
     	char op; cin >> op;
-    	if(op == '!') {
-    		ll idx, num; cin >> idx >> num;
-    		seg.update(a,idx-1,num);
-    	} else {
-    		ll ai, bi;
-    		cin >> ai >> bi;
-    		ll ans = seg.query(a,ai,bi);
+    	if(op == '?') {
+    		int a, b, ans = 0; 
+    		cin >> a >> b;
+    		int bucketA = bucket_no(a);
+    		int bucketB = bucket_no(b);
+
+    		// cover overlap in left bucket
+    		int endOfBucketA = (bucketA+1)*1000;
+    		int lo = a, hi = min(endOfBucketA,b);
+    		ans += partial_overlap(lo,hi,m);
+
+    		// // cover overlap in right bucket
+    		int startOfBucketB = (bucketB*1000)+1; 
+    		lo = max(startOfBucketB,a), hi = b;
+    		if(bucketA != bucketB) {
+    			ans += partial_overlap(lo,hi,m);
+    		}
+
+    		ans += seg.query(bucketA+1,bucketB-1);
+
     		p1(ans);
+    	
+    	} else {
+    		int k, newSalary; cin >> k >> newSalary;
+    		k--;
+    		int oldSalary = salary[k];
+    		salary[k] = newSalary;
+    		int oldBucket = bucket_no(oldSalary), newBucket = bucket_no(newSalary);
+    		bucket[oldBucket]--;
+    		bucket[newBucket]++;
+    		m[oldSalary]--;
+    		m[newSalary]++;
+    		seg.update(oldBucket,bucket[oldBucket]);
+    		seg.update(newBucket,bucket[newBucket]);
     	}
     }
 }
