@@ -1,5 +1,3 @@
-
-
 # Range Queries
 
 ### Static Range Sum Queries
@@ -102,5 +100,67 @@ Refer to the code for more clarity.
 
 Time complexity: \
 Build: O(10<sup>7</sup>) \
-Query: O(log 10<sup>7</sup> + QlogN) \
+Query: O(log 10<sup>7</sup> + QlogN + 1000\*Q) \
 Update: O(log 10<sup>7</sup>)
+
+### Prefix Sum Queries
+
+The max prefix of a segment can be seen as,\
+maxPrefix <sub>seg</sub> = *max* { maxPrefix <sub>left</sub> , sum <sub>left</sub> + maxPrefix <sub>right</sub>}.
+
+At each node in segment tree, store the sum of the corresponding segment and the maximum prefix of the corresponding  segment. Return both these values for queries and update both these values for update operations. We can use the following relation for sum and maxPrefix:
+
+sum <sub>seg</sub> = sum <sub>left</sub> + sum <sub>right</sub>.\
+maxPrefix <sub>seg</sub> = *max* { maxPrefix <sub>left</sub> , sum <sub>left</sub> + maxPrefix <sub>right</sub>}.
+
+In my implementation, I return ```{sum, maxPrefix}``` from query operations, so final answer would be ```query(a,b).maxPrefix```
+
+Time complexity: O(Q\*logN)
+
+### Pizzeria Queries
+
+Let index i be where we want pizza to be delivered, and j be from where pizza is delivered. We can have 2 cases:
+
+1. i $\le$ j, then ans = p[j] + j - i
+2. i $\ge$ j, then ans = p[j] - j + i
+
+i is given to us, and thus is constant in each query and can be added later. We can create 2 range min segment trees:
+
+1. low: stores values of p[j] - j
+2. high: stores values of p[j] + j.
+
+For each query, on index k:
+
+```
+left = low.query(0,k) // find min p[j]-j on [0,k]
+right = high.query(k,n-1) // find min p[j]+j on [k,n-1]
+
+ans = min { left + k , right - k }
+```
+Time complexity: O(2Q\*logN)
+
+### Subarray Sum Queries
+
+Create a segment tree where each node contains 4 values for it's corresponding segment:
+
+```
+int maxm; // max subarray on this segment 
+int prefix; // max prefix on this segment
+int suffix; // max suffix on this segment
+int sumAll; // sum of all elements on this segment
+```
+
+During each update, after updating the values for the left and right child recursively, we calculate calculate these values for the root node as:
+
+```
+int sumAll = left.sumAll + right.sumAll;
+int prefix = max(left.prefix, left.sumAll + right.prefix);
+int suffix = max(right.suffix, left.suffix + right.sumAll);
+int maxm = max({left.maxm, right.maxm, left.suffix + right.prefix});
+```
+
+Final maximum subarray after each update is the ```maxm``` attribute for root node of segment tree ( root represents the segment [0,n-1] ).
+
+Refer to the code for better understanding.
+
+Time complexity: O(M\*logN), where M is the number of updates.
