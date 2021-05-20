@@ -1,3 +1,4 @@
+
 # Dynamic Programming
 
 ### Dice Combinations
@@ -162,5 +163,17 @@ Now each query can be answered in O(1) time.
 Time complexity: O(N + T)
 
 #### \#2 Matrix Exponentiation
+```
+newWidth2 = 2*width2 + width1
+newWidth1 = 4*width1 + width2
+```
+can be represented in the form of a matrix
 
-![Matrix](/matrix.png)
+![Matrix](https://github.com/devangrajarora/cses-solutions/blob/main/Editorials/matrix.png)
+
+this calulation needs to be repeated n times, which is equivalent to raising this matrix to it's n-1<sup>th</sup> power multiplying it by [1 1].
+Matrix can be raised to a certain power using Matrix exponentaion (similar to binary exponentaion) in O(logN).
+
+Final answer is sum of both terms of resultantMatrix * [1 1]
+
+Time complexity: O(logN)
